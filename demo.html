@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Demo of Scroll.js</title>
+    <style>
+    html,
+    body {
+        height: 100%;
+        padding: 0;
+        margin: 0;
+        border: 0;
+    }
+    
+    .scroll-wrap {
+        position: relative;
+        height: 50%;
+        border: 1px solid #000;
+        overflow: hidden;
+    }
+    
+    .scroll-body {
+        position: relative;
+        width: 100%;
+        border: 1px solid #333;
+    }
+    
+    .test-div {
+        height: 64px;
+        line-height: 64px;
+        font-size: 32px;
+        border: 1px solid #666;
+    }
+    </style>
+    <script src="scroll.js"></script>
+    <script>
+    var addScrollContentForTest = function() {
+        var div1 = document.getElementById('div1');
+        for (var i = 0; i < 100; i++) {
+            var child = document.createElement('div');
+            child.className = 'test-div';
+            child.innerHTML = i;
+            div1.appendChild(child);
+        }
+    };
+
+    var swipeDetect = function(el, callback) {
+        var touchsurface = el,
+            swipedir,
+            startX,
+            startY,
+            startTop, //shen
+            distX,
+            distY,
+            threshold = 150, //required min distance traveled to be considered swipe
+            restraint = 100, // maximum distance allowed at the same time in perpendicular direction
+            allowedTime = 300, // maximum time allowed to travel that distance
+            elapsedTime,
+            startTime,
+            handleswipe = callback || function() {}
+
+        touchsurface.addEventListener('touchstart', function(e) {
+            var touchobj = e.changedTouches[0]
+            swipedir = 'none'
+            dist = 0
+            startX = touchobj.pageX
+            startY = touchobj.pageY
+            startTop = parseFloat(touchsurface.style.top.substr(0, touchsurface.style.top.length - 2)) //shen
+            console.log('start y: ' + startY)
+            startTime = new Date().getTime() // record time when finger first makes contact with surface
+            e.preventDefault()
+        }, false)
+
+        touchsurface.addEventListener('touchmove', function(e) {
+            var touchobj = e.changedTouches[0]
+            console.log('y: ' + touchobj.pageY)
+            touchsurface.style.top = startTop + (touchobj.pageY - startY) + 'px'; //shen
+            e.preventDefault() // prevent scrolling when inside DIV
+        }, false)
+
+        touchsurface.addEventListener('touchend', function(e) {
+            var touchobj = e.changedTouches[0]
+            distX = touchobj.pageX - startX // get horizontal dist traveled by finger while in contact with surface
+            distY = touchobj.pageY - startY // get vertical dist traveled by finger while in contact with surface
+            elapsedTime = new Date().getTime() - startTime // get time elapsed
+            if (elapsedTime <= allowedTime) { // first condition for awipe met
+                if (Math.abs(distX) >= threshold && Math.abs(distY) <= restraint) { // 2nd condition for horizontal swipe met
+                    swipedir = (distX < 0) ? 'left' : 'right' // if dist traveled is negative, it indicates left swipe
+                } else if (Math.abs(distY) >= threshold && Math.abs(distX) <= restraint) { // 2nd condition for vertical swipe met
+                    swipedir = (distY < 0) ? 'up' : 'down' // if dist traveled is negative, it indicates up swipe
+                }
+            }
+            handleswipe(swipedir, elapsedTime, distX, distY)
+            e.preventDefault()
+        }, false)
+    };
+
+    window.onload = function() {
+        addScrollContentForTest();
+        var el = document.getElementById('div1');
+        swipeDetect(el, function(swipedir, elapsedTime, distX, distY) {
+            console.log('Dir: ' + swipedir);
+            switch (swipedir) {
+                case 'up':
+                    console.log('Speed: ' + (-distY / elapsedTime));
+                    break;
+                case 'down':
+                    console.log('Speed: ' + (distY / elapsedTime));
+                    break;
+                default:
+            }
+        });
+    };
+    </script>
+</head>
+
+<body>
+    <div class="scroll-wrap">
+        <div id="div1" style="top:0px;" class="scroll-body"></div>
+    </div>
+</body>
+
+</html>
