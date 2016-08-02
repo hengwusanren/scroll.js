@@ -12,28 +12,40 @@
         margin: 0;
         border: 0;
     }
-    
+
     .scroll-wrap {
         position: relative;
         height: 50%;
         border: 1px solid #000;
         overflow: hidden;
     }
-    
+
     .scroll-body {
         position: relative;
         width: 100%;
         border: 1px solid #333;
     }
-    
+
     .test-div {
         height: 64px;
         line-height: 64px;
         font-size: 32px;
         border: 1px solid #666;
     }
+
+    .scroll-transition {
+        -webkit-transition:  translate 2s cubic-bezier(.33, .67, .67, 1);
+        -moz-transition:  translate 2s cubic-bezier(.33, .67, .67, 1);
+        -o-transition:  translate 2s cubic-bezier(.33, .67, .67, 1);
+        transition:  translate 2s cubic-bezier(.33, .67, .67, 1);
+    }
+    .scroll-transform {
+        -webkit-transform:  translate(0, -1000px);
+        -moz-transform:  translate(0, -1000px);
+        -o-transform:  translate(0, -1000px);
+        transform:  translate(0, -1000px);
+    }
     </style>
-    <script src="scroll.js"></script>
     <script>
     var addScrollContentForTest = function() {
         var div1 = document.getElementById('div1');
@@ -46,7 +58,7 @@
     };
 
     var swipeDetect = function(el, callback) {
-        var touchsurface = el,
+        var page = el,
             swipedir,
             startX,
             startY,
@@ -60,26 +72,30 @@
             startTime,
             handleswipe = callback || function() {}
 
-        touchsurface.addEventListener('touchstart', function(e) {
+        page.addEventListener('touchstart', function(e) {
             var touchobj = e.changedTouches[0]
             swipedir = 'none'
             dist = 0
             startX = touchobj.pageX
             startY = touchobj.pageY
-            startTop = parseFloat(touchsurface.style.top.substr(0, touchsurface.style.top.length - 2)) //shen
-            console.log('start y: ' + startY)
+
+            toggleClass(this, 'scroll-transition')
+            startTop = parseFloat(this.getAttribute('transform'))
+            this.className = this.className.replace('scroll-transform', '')
+
             startTime = new Date().getTime() // record time when finger first makes contact with surface
             e.preventDefault()
         }, false)
 
-        touchsurface.addEventListener('touchmove', function(e) {
+        page.addEventListener('touchmove', function(e) {
             var touchobj = e.changedTouches[0]
-            console.log('y: ' + touchobj.pageY)
-            touchsurface.style.top = startTop + (touchobj.pageY - startY) + 'px'; //shen
+
+            translateUpdate(this, startTop + touchobj.pageY - startY, true)
+
             e.preventDefault() // prevent scrolling when inside DIV
         }, false)
 
-        touchsurface.addEventListener('touchend', function(e) {
+        page.addEventListener('touchend', function(e) {
             var touchobj = e.changedTouches[0]
             distX = touchobj.pageX - startX // get horizontal dist traveled by finger while in contact with surface
             distY = touchobj.pageY - startY // get vertical dist traveled by finger while in contact with surface
@@ -91,25 +107,52 @@
                     swipedir = (distY < 0) ? 'up' : 'down' // if dist traveled is negative, it indicates up swipe
                 }
             }
-            handleswipe(swipedir, elapsedTime, distX, distY)
+
+            toggleClass(this, 'scroll-transition', true)
+            setTimeout(function() {handleswipe(this, swipedir, elapsedTime, distX, distY)}.bind(this), 1000)
+
             e.preventDefault()
         }, false)
+    };
+
+    var translateUpdate = function(el, d, abs) {
+        var t = (abs ? 0 : parseInt(el.getAttribute('transform'))) + d;
+        el.setAttribute('transform', t);
+        t = 'translate(0,' + t + 'px)';
+        el.style.transform = t;
+        el.style.WebkitTransform = t;
+        el.style.MozTransform = t;
+        el.style.OTransform = t;
+    };
+
+    var toggleClass = function(el, className, add) {
+        var s = ' ' + el.className + ' ';
+        if(add) {
+            if(s.indexOf(' ' + className + ' ') >= 0) return;
+            el.className += ' ' + className;
+            return;
+        }
+        if(s.indexOf(' ' + className + ' ') < 0) return;
+        el.className = s.replace(' ' + className + ' ', ' ');
+        return;
     };
 
     window.onload = function() {
         addScrollContentForTest();
         var el = document.getElementById('div1');
-        swipeDetect(el, function(swipedir, elapsedTime, distX, distY) {
+        swipeDetect(el, function(elem, swipedir, elapsedTime, distX, distY) {
             console.log('Dir: ' + swipedir);
             switch (swipedir) {
                 case 'up':
-                    console.log('Speed: ' + (-distY / elapsedTime));
+                    //console.log('Speed: ' + (-distY / elapsedTime));
                     break;
                 case 'down':
-                    console.log('Speed: ' + (distY / elapsedTime));
+                    //console.log('Speed: ' + (distY / elapsedTime));
                     break;
                 default:
             }
+
+            translateUpdate(elem, distY > 0 ? 1000 : -1000);
         });
     };
     </script>
@@ -117,7 +160,7 @@
 
 <body>
     <div class="scroll-wrap">
-        <div id="div1" style="top:0px;" class="scroll-body"></div>
+        <div id="div1" transform="0" class="scroll-body"></div>
     </div>
 </body>
 
