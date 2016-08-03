@@ -34,10 +34,10 @@
     }
 
     .scroll-transition {
-        -webkit-transition:  translate 2s cubic-bezier(.33, .67, .67, 1);
-        -moz-transition:  translate 2s cubic-bezier(.33, .67, .67, 1);
-        -o-transition:  translate 2s cubic-bezier(.33, .67, .67, 1);
-        transition:  translate 2s cubic-bezier(.33, .67, .67, 1);
+        -webkit-transition:  all 2s cubic-bezier(.33, .67, .67, 1);
+        -moz-transition:  all 2s cubic-bezier(.33, .67, .67, 1);
+        -o-transition:  all 2s cubic-bezier(.33, .67, .67, 1);
+        transition:  all 2s cubic-bezier(.33, .67, .67, 1);
     }
     .scroll-transform {
         -webkit-transform:  translate(0, -1000px);
@@ -49,7 +49,7 @@
     <script>
     var addScrollContentForTest = function() {
         var div1 = document.getElementById('div1');
-        for (var i = 0; i < 100; i++) {
+        for (var i = 0; i < 1000; i++) {
             var child = document.createElement('div');
             child.className = 'test-div';
             child.innerHTML = i;
@@ -62,12 +62,17 @@
             swipedir,
             startX,
             startY,
-            startTop, //shen
+            startTop,
+            thenX, thenY, nowX, nowY,
+            lastMoveTime,
+            lastLastMoveTime,
+            endTime,
             distX,
             distY,
             threshold = 150, //required min distance traveled to be considered swipe
             restraint = 100, // maximum distance allowed at the same time in perpendicular direction
             allowedTime = 300, // maximum time allowed to travel that distance
+            thresholdTime = 100,
             elapsedTime,
             startTime,
             handleswipe = callback || function() {}
@@ -79,9 +84,16 @@
             startX = touchobj.pageX
             startY = touchobj.pageY
 
+            console.log('touchstart: ' + new Date().getTime())
+            thenX = nowX = startX
+            thenY = nowY = startY
+            lastLastMoveTime = lastMoveTime = new Date().getTime()
+
             toggleClass(this, 'scroll-transition')
             startTop = parseFloat(this.getAttribute('transform'))
             this.className = this.className.replace('scroll-transform', '')
+
+            translateStop(this)
 
             startTime = new Date().getTime() // record time when finger first makes contact with surface
             e.preventDefault()
@@ -91,6 +103,14 @@
             var touchobj = e.changedTouches[0]
 
             translateUpdate(this, startTop + touchobj.pageY - startY, true)
+
+            // console.log('touchmoving: ' + new Date().getTime())
+            thenX = nowX
+            nowX = touchobj.pageX
+            thenY = nowY
+            nowY = touchobj.pageY
+            lastLastMoveTime = lastMoveTime
+            lastMoveTime = new Date().getTime()
 
             e.preventDefault() // prevent scrolling when inside DIV
         }, false)
@@ -108,8 +128,11 @@
                 }
             }
 
+            console.log('touchend: ' + new Date().getTime())
+            endTime = new Date().getTime()
+
             toggleClass(this, 'scroll-transition', true)
-            setTimeout(function() {handleswipe(this, swipedir, elapsedTime, distX, distY)}.bind(this), 1000)
+            handleswipe(this, swipedir, elapsedTime, distX, distY, nowX - thenX, nowY - thenY, lastMoveTime - lastLastMoveTime, endTime - lastMoveTime, thresholdTime)
 
             e.preventDefault()
         }, false)
@@ -119,6 +142,15 @@
         var t = (abs ? 0 : parseInt(el.getAttribute('transform'))) + d;
         el.setAttribute('transform', t);
         t = 'translate(0,' + t + 'px)';
+        el.style.transform = t;
+        el.style.WebkitTransform = t;
+        el.style.MozTransform = t;
+        el.style.OTransform = t;
+    };
+
+    var translateStop = function(el) {
+        el.setAttribute('transform', '0');
+        var t = '';
         el.style.transform = t;
         el.style.WebkitTransform = t;
         el.style.MozTransform = t;
@@ -140,8 +172,13 @@
     window.onload = function() {
         addScrollContentForTest();
         var el = document.getElementById('div1');
-        swipeDetect(el, function(elem, swipedir, elapsedTime, distX, distY) {
+        swipeDetect(el, function(elem, swipedir, elapsedTime, distX, distY, lastDistX, lastDistY, lastDistTime, pauseTime, thresholdTime) {
             console.log('Dir: ' + swipedir);
+            // console.log('DistX: ' + distX);
+            console.log('Dist: ' + distY + ', ' + elapsedTime);
+            // console.log('LastDistX: ' + lastDistX);
+            console.log('LastDist: ' + lastDistY + ', ' + lastDistTime);
+            console.log('Pause: ' + pauseTime);
             switch (swipedir) {
                 case 'up':
                     //console.log('Speed: ' + (-distY / elapsedTime));
@@ -152,7 +189,11 @@
                 default:
             }
 
-            translateUpdate(elem, distY > 0 ? 1000 : -1000);
+            var initialSpeed = lastDistY * 1000 / lastDistTime;
+            console.log('InitialSpeed: ' + initialSpeed + ' px/s');
+            // var acceleration = initialSpeed / 2;
+            var s = initialSpeed * 2 / 2;
+            if(pauseTime < thresholdTime) translateUpdate(elem, distY > 0 ? -s : s);
         });
     };
     </script>
