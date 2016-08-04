@@ -75,70 +75,64 @@
             thresholdTime = 100,
             elapsedTime,
             startTime,
-            handleswipe = callback || function() {}
+            handleswipe = callback || function() {};
 
         page.addEventListener('touchstart', function(e) {
-            translateStop(this)
+            translateStop(this);
 
-            var touchobj = e.changedTouches[0]
-            swipedir = 'none'
-            dist = 0
-            startX = touchobj.pageX
-            startY = touchobj.pageY
+            var touchobj = e.changedTouches[0];
+            swipedir = 'none';
+            dist = 0;
+            startX = touchobj.pageX;
+            startY = touchobj.pageY;
 
-            console.log('touchstart: ' + new Date().getTime())
-            thenX = nowX = startX
-            thenY = nowY = startY
-            lastLastMoveTime = lastMoveTime = new Date().getTime()
+            console.log('touchstart: ' + new Date().getTime());
+            thenX = nowX = startX;
+            thenY = nowY = startY;
+            startTime = lastLastMoveTime = lastMoveTime = new Date().getTime();
 
-            // toggleClass(this, 'scroll-transition')
-            // startTop = parseFloat(this.getAttribute('transform'))
-            //this.className = this.className.replace('scroll-transform', '')
+            startTop = parseFloat(this.getAttribute('transform'));
 
-            startTop = parseFloat(this.getAttribute('transform'))
-
-            startTime = new Date().getTime() // record time when finger first makes contact with surface
-            e.preventDefault()
-        }, false)
+            e.preventDefault();
+        }, false);
 
         page.addEventListener('touchmove', function(e) {
-            var touchobj = e.changedTouches[0]
+            var touchobj = e.changedTouches[0];
 
-            translateUpdate(this, startTop + touchobj.pageY - startY, true)
+            translateUpdate(this, startTop + touchobj.pageY - startY, true);
 
-            // console.log('touchmoving: ' + new Date().getTime())
-            thenX = nowX
-            nowX = touchobj.pageX
-            thenY = nowY
-            nowY = touchobj.pageY
-            lastLastMoveTime = lastMoveTime
-            lastMoveTime = new Date().getTime()
+            // console.log('touchmoving: ' + new Date().getTime());
+            thenX = nowX;
+            nowX = touchobj.pageX;
+            thenY = nowY;
+            nowY = touchobj.pageY;
+            lastLastMoveTime = lastMoveTime;
+            lastMoveTime = new Date().getTime();
 
-            e.preventDefault() // prevent scrolling when inside DIV
-        }, false)
+            e.preventDefault(); // prevent scrolling when inside DIV
+        }, false);
 
         page.addEventListener('touchend', function(e) {
-            var touchobj = e.changedTouches[0]
-            distX = touchobj.pageX - startX // get horizontal dist traveled by finger while in contact with surface
-            distY = touchobj.pageY - startY // get vertical dist traveled by finger while in contact with surface
-            elapsedTime = new Date().getTime() - startTime // get time elapsed
+            var touchobj = e.changedTouches[0];
+            distX = touchobj.pageX - startX; // get horizontal dist traveled by finger while in contact with surface
+            distY = touchobj.pageY - startY; // get vertical dist traveled by finger while in contact with surface
+            elapsedTime = new Date().getTime() - startTime; // get time elapsed
             if (elapsedTime <= allowedTime) { // first condition for awipe met
                 if (Math.abs(distX) >= threshold && Math.abs(distY) <= restraint) { // 2nd condition for horizontal swipe met
-                    swipedir = (distX < 0) ? 'left' : 'right' // if dist traveled is negative, it indicates left swipe
+                    swipedir = (distX < 0) ? 'left' : 'right'; // if dist traveled is negative, it indicates left swipe
                 } else if (Math.abs(distY) >= threshold && Math.abs(distX) <= restraint) { // 2nd condition for vertical swipe met
-                    swipedir = (distY < 0) ? 'up' : 'down' // if dist traveled is negative, it indicates up swipe
+                    swipedir = (distY < 0) ? 'up' : 'down'; // if dist traveled is negative, it indicates up swipe
                 }
             }
 
-            console.log('touchend: ' + new Date().getTime())
-            endTime = new Date().getTime()
+            console.log('touchend: ' + new Date().getTime());
+            endTime = new Date().getTime();
 
-            //toggleClass(this, 'scroll-transition', true)
-            this.classList.add('scroll-transition')
-            handleswipe(this, swipedir, elapsedTime, distX, distY, nowX - thenX, nowY - thenY, lastMoveTime - lastLastMoveTime, endTime - lastMoveTime, thresholdTime)
+            this.classList.add('scroll-transition');
+            handleswipe(this, swipedir, elapsedTime, distX, distY, nowX - thenX, nowY - thenY, lastMoveTime - lastLastMoveTime, endTime - lastMoveTime, thresholdTime);
 
-            e.preventDefault()
-        }, false)
+            e.preventDefault();
+        }, false);
     };
 
     var translateUpdate = function(el, d, abs) {
@@ -152,8 +146,6 @@
     };
 
     var translateStop = function(el) {
-        //toggleClass(el, 'scroll-transition')
-
         var computedStyle = window.getComputedStyle(el),
         t = computedStyle.getPropertyValue('transform');
         el.style.transform = t;
@@ -163,10 +155,9 @@
         el.classList.remove('scroll-transition');
 
         if(t != 'none') {
-            t = t.substring(t.lastIndexOf(', ') + 2, t.length - 2)
-            el.setAttribute('transform', t)
+            t = t.substring(t.lastIndexOf(', ') + 2, t.length - (t.endsWith('px)') ? 3 : 1));
+            el.setAttribute('transform', t);
         }
-        // startTop = parseFloat(el.getAttribute('transform'))
     };
 
     var toggleClass = function(el, className, add) {
