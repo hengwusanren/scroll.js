@@ -73,6 +73,7 @@
             restraint = 100, // maximum distance allowed at the same time in perpendicular direction
             allowedTime = 300, // maximum time allowed to travel that distance
             thresholdTime = 100,
+            acceleration = 2000,
             elapsedTime,
             startTime,
             handleswipe = callback || function() {};
@@ -99,7 +100,10 @@
         page.addEventListener('touchmove', function(e) {
             var touchobj = e.changedTouches[0];
 
-            translateUpdate(this, startTop + touchobj.pageY - startY, true);
+            var newPos = startTop + touchobj.pageY - startY;
+            if(newPos > 0) newPos = 0;
+            if(newPos < -this.clientHeight) newPos = -this.clientHeight;
+            translateUpdate(this, newPos, true);
 
             // console.log('touchmoving: ' + new Date().getTime());
             thenX = nowX;
@@ -128,15 +132,21 @@
             console.log('touchend: ' + new Date().getTime());
             endTime = new Date().getTime();
 
-            this.classList.add('scroll-transition');
-            handleswipe(this, swipedir, elapsedTime, distX, distY, nowX - thenX, nowY - thenY, lastMoveTime - lastLastMoveTime, endTime - lastMoveTime, thresholdTime);
+            // setTimeout(function() {handleswipe(this, swipedir, elapsedTime, distX, distY, nowX - thenX, nowY - thenY, lastMoveTime - lastLastMoveTime, endTime - lastMoveTime, thresholdTime, acceleration);}.bind(this), 0);
+            handleswipe(this, swipedir, elapsedTime, distX, distY, nowX - thenX, nowY - thenY, lastMoveTime - lastLastMoveTime, endTime - lastMoveTime, thresholdTime, acceleration);
 
             e.preventDefault();
         }, false);
     };
 
-    var translateUpdate = function(el, d, abs) {
-        var t = (abs ? 0 : parseInt(el.getAttribute('transform'))) + d;
+    var translateUpdate = function(el, d, abs, a) {
+        var t;
+        if(abs) t = d;
+        else {
+            t = parseInt(el.getAttribute('transform')) + (d > 0 ? 1 : -1) * d * d / (2 * a);
+        }
+        if(t > 0) t = 0;
+        if(t < -el.clientHeight) t = -el.clientHeight;
         el.setAttribute('transform', t);
         t = 'translate(0,' + t + 'px)';
         el.style.transform = t;
@@ -152,7 +162,8 @@
         el.style.WebkitTransform = t;
         el.style.MozTransform = t;
         el.style.OTransform = t;
-        el.classList.remove('scroll-transition');
+        // el.classList.remove('scroll-transition');
+        el.className = '';
 
         if(t != 'none') {
             t = t.substring(t.lastIndexOf(', ') + 2, t.length - (t.endsWith('px)') ? 3 : 1));
@@ -172,10 +183,12 @@
         return;
     };
 
+    var scrollStyle = null;
+
     window.onload = function() {
         addScrollContentForTest();
         var el = document.getElementById('div1');
-        swipeDetect(el, function(elem, swipedir, elapsedTime, distX, distY, lastDistX, lastDistY, lastDistTime, pauseTime, thresholdTime) {
+        swipeDetect(el, function(elem, swipedir, elapsedTime, distX, distY, lastDistX, lastDistY, lastDistTime, pauseTime, thresholdTime, acceleration) {
             console.log('Dir: ' + swipedir);
             // console.log('DistX: ' + distX);
             console.log('Dist: ' + distY + ', ' + elapsedTime);
@@ -194,9 +207,18 @@
 
             var initialSpeed = lastDistY * 1000 / lastDistTime;
             console.log('InitialSpeed: ' + initialSpeed + ' px/s');
-            // var acceleration = initialSpeed / 2;
-            var s = initialSpeed * 2 / 2;
-            if(pauseTime < thresholdTime) translateUpdate(elem, s);
+
+            if(scrollStyle) document.getElementsByTagName('head')[0].removeChild(scrollStyle);
+            scrollStyle = document.createElement('style');
+            scrollStyle.type = 'text/css';
+            var moveDuration = Math.abs(initialSpeed) / acceleration;
+            console.log('move duration: ' + moveDuration);
+            var t = 'transition:  all ' + moveDuration + 's cubic-bezier(.33, .67, .67, 1);';
+            t = '-webkit-' + t + '-moz-' + t + '-o-' + t + t;
+            scrollStyle.innerHTML = '.scroll-transition { ' + t + ' }';
+            document.getElementsByTagName('head')[0].appendChild(scrollStyle);
+            elem.classList.add('scroll-transition');
+            if(pauseTime < thresholdTime) translateUpdate(elem, initialSpeed, false, acceleration);
         });
     };
     </script>
@@ -204,7 +226,7 @@
 
 <body>
     <div class="scroll-wrap">
-        <div id="div1" transform="0" class="scroll-body"></div>
+        <div id="div1" transform="0"></div>
     </div>
 </body>
 
