@@ -27,7 +27,7 @@
     }
 
     .test-div {
-        height: 64px;
+        height: 256px;
         line-height: 64px;
         font-size: 32px;
         border: 1px solid #666;
@@ -78,6 +78,8 @@
             handleswipe = callback || function() {}
 
         page.addEventListener('touchstart', function(e) {
+            translateStop(this)
+
             var touchobj = e.changedTouches[0]
             swipedir = 'none'
             dist = 0
@@ -89,11 +91,11 @@
             thenY = nowY = startY
             lastLastMoveTime = lastMoveTime = new Date().getTime()
 
-            toggleClass(this, 'scroll-transition')
-            startTop = parseFloat(this.getAttribute('transform'))
-            this.className = this.className.replace('scroll-transform', '')
+            // toggleClass(this, 'scroll-transition')
+            // startTop = parseFloat(this.getAttribute('transform'))
+            //this.className = this.className.replace('scroll-transform', '')
 
-            translateStop(this)
+            startTop = parseFloat(this.getAttribute('transform'))
 
             startTime = new Date().getTime() // record time when finger first makes contact with surface
             e.preventDefault()
@@ -131,7 +133,8 @@
             console.log('touchend: ' + new Date().getTime())
             endTime = new Date().getTime()
 
-            toggleClass(this, 'scroll-transition', true)
+            //toggleClass(this, 'scroll-transition', true)
+            this.classList.add('scroll-transition')
             handleswipe(this, swipedir, elapsedTime, distX, distY, nowX - thenX, nowY - thenY, lastMoveTime - lastLastMoveTime, endTime - lastMoveTime, thresholdTime)
 
             e.preventDefault()
@@ -149,12 +152,21 @@
     };
 
     var translateStop = function(el) {
-        el.setAttribute('transform', '0');
-        var t = '';
+        //toggleClass(el, 'scroll-transition')
+
+        var computedStyle = window.getComputedStyle(el),
+        t = computedStyle.getPropertyValue('transform');
         el.style.transform = t;
         el.style.WebkitTransform = t;
         el.style.MozTransform = t;
         el.style.OTransform = t;
+        el.classList.remove('scroll-transition');
+
+        if(t != 'none') {
+            t = t.substring(t.lastIndexOf(', ') + 2, t.length - 2)
+            el.setAttribute('transform', t)
+        }
+        // startTop = parseFloat(el.getAttribute('transform'))
     };
 
     var toggleClass = function(el, className, add) {
@@ -193,7 +205,7 @@
             console.log('InitialSpeed: ' + initialSpeed + ' px/s');
             // var acceleration = initialSpeed / 2;
             var s = initialSpeed * 2 / 2;
-            if(pauseTime < thresholdTime) translateUpdate(elem, distY > 0 ? -s : s);
+            if(pauseTime < thresholdTime) translateUpdate(elem, s);
         });
     };
     </script>
